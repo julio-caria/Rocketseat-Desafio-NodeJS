@@ -1,0 +1,10 @@
+# docker-compose.yml - Required Services Configuration
+services:
+  db: 
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: desafio_nodejs
+    ports: 
+      - "5432:5432"

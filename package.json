@@ -17,11 +17,13 @@
   },
   "homepage": "https://github.com/julio-caria/Rocketseat-Desafio-NodeJS#readme",
   "dependencies": {
+    "drizzle-orm": "^0.44.4",
     "fastify": "^5.5.0",
     "pino-pretty": "^13.1.1"
   },
   "devDependencies": {
     "@types/node": "^24.2.1",
+    "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.2"
   }
 }
