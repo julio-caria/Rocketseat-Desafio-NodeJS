@@ -1,0 +1,27 @@
+{
+  "name": "rocketseat-desafio-nodejs",
+  "version": "1.0.0",
+  "description": "O projeto em questao e voltado para o desenvolvimento de uma API completa, utilizando NodeJS, conhecendo os principais fundamentos, incluindo updates do ecossistema do NodeJS.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types --no-warnings server.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julio-caria/Rocketseat-Desafio-NodeJS.git"
+  },
+  "author": "Julio Caria",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/julio-caria/Rocketseat-Desafio-NodeJS/issues"
+  },
+  "homepage": "https://github.com/julio-caria/Rocketseat-Desafio-NodeJS#readme",
+  "dependencies": {
+    "fastify": "^5.5.0",
+    "pino-pretty": "^13.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,17 @@
+@baseURL = http://localhost:3333
+
+### 
+GET {{baseURL}}/courses
+
+###
+POST {{baseURL}}/courses
+Content-Type: application/json
+
+{
+  "title": "Novo Curso"
+}
+###
+
+GET {{baseURL}}/courses/5
+
+### 
