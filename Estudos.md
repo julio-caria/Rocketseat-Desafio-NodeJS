@@ -2,6 +2,36 @@
 
 O projeto em questão e voltado para o desenvolvimento de uma API completa, utilizando NodeJS, conhecendo os principais fundamentos, incluindo updates do ecossistema do NodeJS.
 
+## Sumário
+
+1. [Introdução](#rocketseat---nodejs)
+2. [Cronograma](#cronograma)
+3. [Fundamentos](#fundamentos)
+   - [JSON](#json)
+   - [API](#api)
+   - [Rest](#rest)
+   - [URL](#url)
+   - [Tipos de dados](#tipos-de-dados)
+   - [HTTP Status Code](#http-status-code)
+4. [Iniciando o Projeto](#iniciando-o-projeto)
+   - [Criando um servidor](#criando-um-servidor)
+   - [Instalando o Fastify](#instalando-o-fastify)
+   - [Estruturando as rotas](#estruturando-as-rotas)
+   - [Chamadas HTTP](#chamadas-http)
+5. [Aprimorando o Projeto](#aprimorando-o-projeto)
+   - [Instalando e configurando Typescript](#instalando-e-configurando-typescript)
+   - [Objeto Logger](#objeto-logger)
+6. [Aula 02 - Conceitos](#aula-02---conceitos)
+   - [Docker](#docker)
+   - [ORM](#orm---object-relational-mapping)
+7. [Arquivo docker-compose.yml](#arquivo-docker-composeyml)
+8. [Drizzle ORM](#drizzle-orm)
+   - [Instalação do Drizzle](#instalação-do-drizzle)
+   - [Configuração do Drizzle](#configuração-do-drizzle)
+   - [Como criar tabelas com Drizzle](#como-criar-tabelas-com-drizzle)
+9. [Validação de dados da requisição](#validação-de-dados-da-requisição)
+   - [Diferença entre Serialização e Validação](#diferença-entre-serialização-e-validação)
+
 ## Cronograma
 
 1. Aula 01 - Fundamentos de API, Status Code, NodeJS.
@@ -292,7 +322,7 @@ server.post('/courses', (request, reply) => {
 
 **Objeto Logger**
 
-A fim de visualizar todas as requisições da nossa API, é possivel adicionar na nossa instancia do fastify o objeto logger com valor true: 
+A fim de visualizar todas as requisições da nossa API, é possivel adicionar na nossa instancia do fastify o objeto logger com valor true:
 
 ```ts
 const server = fastify({ logger: true })
@@ -358,7 +388,7 @@ Contudo, um ORM surge como maneira de manipular/trabalhar com banco de dados de 
 | Prisma    | Melhor DX/ Sintaxe longe do SQL      |
 | Drizzle   | Pior DX/ Sintaxe mais proxima do SQL |
 
-> DX: Developmenmt Experience
+> DX: Development Experience
 
 ORM Escolhido: Drizzle, a esolha se dá pelos seguintes motivos:
 
@@ -456,4 +486,254 @@ export default defineConfig({
 })
 ```
 
-<!-- 58:18 -->
+**Como criar tabelas com Drizzle?**
+
+Para realizar a criacao de tabelas utilizando o ORM, basta seguir a seguinte estrutura:
+
+```ts
+import { uuid } from 'drizzle-orm/pg-core'
+import { text } from 'drizzle-orm/pg-core'
+import { pgTable } from 'drizzle-orm/pg-core'
+
+export const users = pgTable('users', {
+  id: uuid().primaryKey().defaultRandom(),
+  name: text().notNull(),
+  email: text().notNull().unique(),
+})
+```
+
+Onde cada campo possui funcoes que representam o tipo de campo e regras referentes a estrutura do banco de dados, no exemplo acima, considere que ao mencionar `text()`, `primaryKey()` etc, nada mais sao do que estabelecer constraints de valores para os campos do banco de dados.
+
+Após realizar a criação da tabela usuários conforme o exemplo acima, é necessário `gerar` nosso arquivo SQL onde conterá a sintaxe SQL de criação da nossa tabela, e posteriormente `migrar` essas mudanças, como? Basta executar os 2 comandos abaixo, respectivamente:
+
+```sh
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+## Validação de dados da requisição
+
+Para realizar a validação dos dados enviados no corpo de uma requisição, será utilizado a biblioteca do `zod` e instalaremos, também, uma integração do fastify com o Zod, o `Fastify Types Provider Zod`, sendo uma extensão/plugin que une as validações e tipos do Zod ao ciclo de vida do Fastify, facilitando o uso seguro, tipado e validado de dados em APIs modernas.
+
+Documentação auxiliar: [Zod](https://zod.dev/) / [Fastify Types Provider Zod](https://fastify.dev/docs/latest/Reference/Type-Providers/)
+
+Para realizar a instalação de ambos, execute o comando abaixo no terminal:
+
+```sh
+npm i zod fastify-types-provider-zod
+```
+
+### Diferença entre Serialização e Validação
+
+- **Validação:** Realiza a checagem nos dados de entrada.
+- **Serialização:** Forma de converter os dados de saída de uma rota em outro formato.
+
+Para adicionar validação na entrada dos dados, estaremos importando o `type ZodTypeProvider`, realizando as alterações no código abaixo:
+
+```ts
+import { validatorCompiler, serializerCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
+import { z } from 'zod/v4' 
+
+const server = fastify({ 
+  logger: { 
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname',
+      },
+    },
+  } 
+}).withTypeProvider<ZodTypeProvider>();
+
+server.setSerializerCompiler(serializerCompiler)
+server.setValidatorCompiler(validatorCompiler)
+
+server.post("/courses", {
+  schema: {
+    body: z.object({
+      title: z.string().min(5, 'Minimum 5 characters is required!'),
+    }),
+  }
+}, async (request, reply) => { 
+  const courseTitle = request.body.title;
+
+  const result = await db
+    .insert(courses)
+    .values({ title: courseTitle })
+    .returning()
+
+  return reply.status(201).send({ courseId: result[0].id })
+
+})
+```
+
+## Documentação
+
+Para realizar a montagem da documentação automática utilizaremos um pacote do fastify denominado Swagger - Formato da documentação: Open API.
+
+```sh
+npm i @fastify/swagger
+npm i @fastify/swagger-ui
+```
+
+No nosso arquivo `server.ts`, podemos configurar o swagger e o swagger ui da seguinte forma: 
+
+```ts
+import { fastifySwagger } from '@fastify/swagger'
+import { fastifySwaggerUi } from '@fastify/swagger-ui'
+import { validatorCompiler, serializerCompiler, type ZodTypeProvider, jsonSchemaTransform } from 'fastify-type-provider-zod'
+
+export const server = fastify({ 
+  logger: { 
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname',
+      },
+    },
+  } 
+}).withTypeProvider<ZodTypeProvider>();
+
+server.register(fastifySwagger, {
+  openapi: {
+    info: {
+      title: 'Rocketseat - Desafio Node.js',
+      version: '1.0.0'
+    }
+  },
+  transform: jsonSchemaTransform
+})
+
+server.register(fastifySwaggerUi, {
+  routePrefix: '/docs'
+})
+```
+
+> OBS.: Após realizar esse setup em nosso código, e acessar a rota `localhost:3333/docs`, ainda não será possível visualizar nenhuma documentação, isso porque o fastify trabalha de forma assíncrona, para contornarmos isso vamos registrar nossas rotas no diretório `src/routes/*.ts`.
+
+Cada rota deverá ser constituida utilizando o `FastifyPluginAsyncZod`, da seguinte forma:
+
+```ts
+import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { db } from "../database/client.ts";
+import { courses } from "../database/schema.ts";
+import { z } from "zod/v4";
+import { eq } from "drizzle-orm";
+
+export const getCourseByIdRoute: FastifyPluginAsyncZod = async (server) => {
+  server.get("/courses/:id", {
+    schema: { 
+      params: z.object({
+        id: z.uuid(),
+      })
+    }
+  }, async (request, reply) => {
+    const courseId = request.params.id
+
+    const result = await db
+      .select()
+      .from(courses)
+      .where(eq(courses.id, courseId))
+
+    if(result.length > 0) {
+      return { course: result[0] }
+    }
+    
+    return reply.status(404).send({ message: "Course not found"})
+  })
+}
+```
+
+Ainda seguindo a estruturação de nossa api, podemos aprimorar nossa documentação utilizando outras propriedades no nosso schema:
+
+```ts
+export const getCourseByIdRoute: FastifyPluginAsyncZod = async (server) => {
+  server.get("/courses/:id", {
+    schema: { 
+      tags: ['courses'],
+      summary: "Get a course by ID",
+      description: "This route receives a course ID as a parameter and returns the properties of that course.",
+      params: z.object({
+        id: z.uuid(),
+      }),
+      response: {
+        200: z.object({
+          course: z.object({
+            id: z.uuid(),
+            title: z.string(),
+            description: z.string().nullable(), 
+          })
+        }),
+        404: z.null().describe('Course not found'),
+      }
+    }
+  }, async (request, reply) => {
+    const courseId = request.params.id
+
+    const result = await db
+      .select()
+      .from(courses)
+      .where(eq(courses.id, courseId))
+
+    if(result.length > 0) {
+      return { course: result[0] }
+    }
+    
+    return reply.status(404).send({ message: "Course not found"})
+  })
+}
+```
+
+Documentação auxiliar do Swagger: [Fastify Swagger](https://www.npmjs.com/package/@fastify/swagger-ui)
+
+### Alternativa para o SwaggerUi
+
+> Uma alternativa para o Swagger UI é o Scalar fastify, para realizar a instalação do pacote, siga os proximos passos.
+
+```sh
+npm install @scalar/fastify-api-reference
+```
+
+Para isso poderemos remover o `swagger-ui` e seguirmos apenas com o `Scalar`, removendo importações não utilizadas e alterando as lihas de código para: 
+
+```ts
+import scalarAPIReference from "@scalar/fastify-api-reference"
+
+server.register(scalarAPIReference, {
+  routePrefix: '/docs',
+})
+```
+
+> É possível realizar a configuração de temas também, caso desejado, além disso o Scalar Fastify possui um API Client que funciona como o Insomnia, Postman etc.
+
+### Restringindo o acesso as docs
+
+Para restringir o acesso à documentação da nossa API, nós podemos criar uma variável no arquivo `.env` e criar um condicional no arquivo `server.ts`, a partir dessa alteração, somente pessoas com acesso ao ambiente de desenvolvimento conseguirão visualizar a documentação.
+
+```env
+NODE_ENV=development
+```
+
+```ts
+if(process.env.NODE_ENV === 'development') {
+  server.register(fastifySwagger, {
+    openapi: {
+      info: {
+        title: 'Rocketseat - Desafio Node.js',
+        version: '1.0.0'
+      }
+    },
+    transform: jsonSchemaTransform
+  })
+
+  server.register(scalarAPIReference, {
+    routePrefix: '/docs',
+    configuration: {
+      title: "Docs - Challenge Node.js API Reference",
+      theme: "deepSpace",
+    }
+  })
+}
+```

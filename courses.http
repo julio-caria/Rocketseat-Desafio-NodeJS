@@ -8,10 +8,10 @@ POST {{baseURL}}/courses
 Content-Type: application/json
 
 {
-  "title": "Novo Curso"
+  "title": "React Native"
 }
 ###
 
-GET {{baseURL}}/courses/5
+GET {{baseURL}}/courses/61b1e4d6-87bb-4b4f-a083-9ba8bd8f619f
 
 ### 
