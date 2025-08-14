@@ -1,131 +1,170 @@
-# Desafio Node.js – Primeira API (aulas)
+# 🚀 API de Cursos - Node.js + TypeScript
 
-API simples em Node.js + TypeScript usando Fastify, Drizzle ORM (PostgreSQL) e Zod. Inclui documentação Swagger/Scalar em ambiente de desenvolvimento.
+Uma API REST simples e moderna construída com Node.js, TypeScript, Fastify e PostgreSQL. Ideal para estudos e como base para projetos maiores.
 
----
+## 📋 Índice
 
-## Requisitos
+- [Tecnologias](#-tecnologias)
+- [Pré-requisitos](#-pré-requisitos)
+- [Instalação](#-instalação)
+- [Configuração](#-configuração)
+- [Executando](#-executando)
+- [Endpoints](#-endpoints)
+- [Estrutura do Banco](#-estrutura-do-banco)
+- [Fluxo da Aplicação](#-fluxo-da-aplicação)
+- [Scripts Disponíveis](#-scripts-disponíveis)
+- [Troubleshooting](#-troubleshooting)
 
-- Node.js 22+
+## 🛠 Tecnologias
+
+- **Runtime:** Node.js 22+
+- **Framework:** Fastify 5
+- **Linguagem:** TypeScript
+- **ORM:** Drizzle ORM
+- **Banco de Dados:** PostgreSQL
+- **Validação:** Zod
+- **Documentação:** Swagger/OpenAPI + Scalar API Reference
+- **Containerização:** Docker & Docker Compose
+
+## ⚙️ Pré-requisitos
+
+- Node.js 22 ou superior
 - Docker e Docker Compose
-- npm (ou outro gerenciador, mas o projeto usa package-lock.json)
+- npm (ou outro gerenciador de pacotes)
 
----
+## 📦 Instalação
 
-## Tecnologias
+1. **Clone o repositório:**
 
-- Fastify 5
-- TypeScript
-- Drizzle ORM + PostgreSQL
-- Zod (validação)
-- Swagger/OpenAPI + Scalar API Reference (em `/docs` quando `NODE_ENV=development`)
+   ```bash
+   git clone <url-do-repositorio>
+   cd Desafio-NodeJS
+   ```
 
----
-
-## Configuração
-
-1. **Clone o repositório e acesse a pasta do projeto.**
 2. **Instale as dependências:**
-
-   ```sh
+   ```bash
    npm install
    ```
 
-3. **Suba o banco Postgres com Docker:**
+## 🔧 Configuração
 
-   ```sh
+1. **Suba o banco PostgreSQL:**
+
+   ```bash
    docker compose up -d
    ```
 
-4. **Crie um arquivo `.env` na raiz com:**
+2. **Crie o arquivo `.env` na raiz:**
 
    ```env
-   # URL do banco (Docker local padrão)
+   # Configuração do banco de dados
    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/desafio
 
-   # Ativa docs em /docs
+   # Ambiente de desenvolvimento (ativa documentação)
    NODE_ENV=development
    ```
 
-5. **Rode as migrações (Drizzle):**
+3. **Execute as migrações:**
 
-   ```sh
+   ```bash
    npm run db:migrate
    ```
 
-6. *(Opcional)* Para inspecionar o schema/estado com o Drizzle Studio:
-   ```sh
+4. **Opcional - Visualize o banco com Drizzle Studio:**
+   ```bash
    npm run db:studio
    ```
 
----
+## ▶️ Executando
 
-## Executando o servidor
-
-```sh
+```bash
 npm run dev
 ```
 
-- Porta padrão: http://localhost:3333
-- Logs legíveis habilitados
-- Documentação da API (em dev): http://localhost:3333/docs
+- **Servidor:** http://localhost:3333
+- **Documentação:** http://localhost:3333/docs (apenas em desenvolvimento)
 
----
+## 🔌 Endpoints
 
-## Endpoints
+### Criar Curso
 
-**Base URL:** `http://localhost:3333`
+```http
+POST /courses
+Content-Type: application/json
 
-### POST `/courses`
-
-Cria um curso  
-**Body (JSON):**
-
-```json
-{ "title": "Curso de Docker" }
+{
+  "title": "Curso de Docker"
+}
 ```
 
-**Respostas:**
+**Resposta (201):**
 
-- `201`: `{ "courseId": "<uuid>" }`
+```json
+{
+  "courseId": "uuid-do-curso"
+}
+```
 
-### GET `/courses`
+### Listar Cursos
 
-Lista todos os cursos
+```http
+GET /courses
+```
 
-**Resposta:**
+**Resposta (200):**
 
-- `200`: `{ "courses": [{ "id": "<uuid>", "title": "..." }] }`
+```json
+{
+  "courses": [
+    {
+      "id": "uuid-do-curso",
+      "title": "Curso de Docker"
+    }
+  ]
+}
+```
 
-### GET `/courses/:id`
+### Buscar Curso por ID
 
-Busca um curso pelo ID  
-**Parâmetros:** `id` (UUID)  
-**Respostas:**
+```http
+GET /courses/:id
+```
 
-- `200`: `{ "course": { "id": "<uuid>", "title": "...", "description": "... | null" } }`
-- `404`: vazio
+**Resposta (200):**
 
-> Há um arquivo `requisicoes.http` com exemplos prontos (compatível com extensões de REST Client).
+```json
+{
+  "course": {
+    "id": "uuid-do-curso",
+    "title": "Curso de Docker",
+    "description": "Descrição do curso (opcional)"
+  }
+}
+```
 
----
+**Resposta (404):** Curso não encontrado
 
-## Modelos (schema)
+> 💡 **Dica:** Use o arquivo `courses.http` para testar os endpoints diretamente no VS Code com extensões REST Client.
 
-Tabelas principais definidas em `src/database/schema.ts`:
+## 🗄️ Estrutura do Banco
 
-- **courses**
-  - `id` (uuid, pk, default random)
-  - `title` (text, único, obrigatório)
-  - `description` (text, opcional)
-- **users** (exemplo para estudos)
-  - `id` (uuid, pk, default random)
-  - `name` (text, obrigatório)
-  - `email` (text, único, obrigatório)
+### Tabela `courses`
 
----
+| Campo         | Tipo | Descrição                               |
+| ------------- | ---- | --------------------------------------- |
+| `id`          | UUID | Chave primária (gerada automaticamente) |
+| `title`       | TEXT | Título do curso (único, obrigatório)    |
+| `description` | TEXT | Descrição do curso (opcional)           |
 
-## Fluxo principal (Mermaid)
+### Tabela `users` (exemplo para estudos)
+
+| Campo   | Tipo | Descrição                               |
+| ------- | ---- | --------------------------------------- |
+| `id`    | UUID | Chave primária (gerada automaticamente) |
+| `name`  | TEXT | Nome do usuário (obrigatório)           |
+| `email` | TEXT | Email do usuário (único, obrigatório)   |
+
+## 🔄 Fluxo da Aplicação
 
 ```mermaid
 sequenceDiagram
@@ -148,7 +187,7 @@ sequenceDiagram
   C->>S: GET /courses
   S->>DB: SELECT id,title FROM courses
   DB-->>S: lista
-  S-->>C: 200 {courses: [...]} 
+  S-->>C: 200 {courses: [...]}
 
   C->>S: GET /courses/:id
   S->>V: Validar param id (uuid)
@@ -162,25 +201,55 @@ sequenceDiagram
   end
 ```
 
+## 📜 Scripts Disponíveis
+
+| Comando               | Descrição                        |
+| --------------------- | -------------------------------- |
+| `npm run dev`         | Inicia o servidor com hot reload |
+| `npm run db:generate` | Gera artefatos do Drizzle        |
+| `npm run db:migrate`  | Aplica migrações no banco        |
+| `npm run db:studio`   | Abre o Drizzle Studio            |
+
+## 🔧 Troubleshooting
+
+### Problemas Comuns
+
+**❌ Conexão recusada ao PostgreSQL**
+
+```bash
+# Verifique se o Docker está rodando
+docker compose up -d
+
+# Confirme que a porta 5432 não está em uso
+netstat -an | grep 5432
+```
+
+**❌ Variável DATABASE_URL não encontrada**
+
+- Verifique se o arquivo `.env` existe na raiz
+- Confirme que a variável `DATABASE_URL` está definida
+
+**❌ Documentação não aparece em `/docs`**
+
+- Certifique-se de que `NODE_ENV=development` no `.env`
+- Reinicie o servidor após alterações no `.env`
+
+**❌ Erro nas migrações**
+
+```bash
+# Gere os artefatos primeiro
+npm run db:generate
+
+# Depois execute as migrações
+npm run db:migrate
+```
+
+## 📄 Licença
+
+Este projeto está sob a licença ISC. Veja o arquivo `package.json` para mais detalhes.
+
 ---
 
-## Scripts
-
-- `npm run dev`: inicia o servidor com reload e carrega variáveis de `.env`
-- `npm run db:generate`: gera artefatos do Drizzle a partir do schema
-- `npm run db:migrate`: aplica migrações no banco
-- `npm run db:studio`: abre o Drizzle Studio
-
----
-
-## Dicas e solução de problemas
-
-- **Conexão recusada ao Postgres:** confirme `docker compose up -d` e que a porta 5432 não está em uso.
-- **Variável DATABASE_URL ausente:** verifique seu `.env`. O Drizzle exige essa variável para `db:generate`, `db:migrate` e `db:studio`.
-- **Docs não aparecem em `/docs`:** garanta `NODE_ENV=development` no `.env` e reinicie o servidor.
-
----
-
-## Licença
-
-ISC (ver `package.json`).
+<div align="center">
+  <p>Feito com ❤️ para estudos de Node.js e TypeScript</p>
+</div>

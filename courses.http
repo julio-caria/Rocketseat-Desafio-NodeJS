@@ -1,6 +1,9 @@
-@baseURL = http://localhost:3333
+@hostname = localhost
+@port = 3333
+@baseURL = http://{{hostname}}:{{port}}
 
-### 
+###
+
 GET {{baseURL}}/courses
 
 ###
