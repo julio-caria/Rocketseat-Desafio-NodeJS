@@ -7,11 +7,14 @@
 GET {{baseURL}}/courses
 
 ###
+GET {{baseURL}}/courses?page=1
+
+###
 POST {{baseURL}}/courses
 Content-Type: application/json
 
 {
-  "title": "React Native"
+  "title": "Curso de Vue.js"
 }
 ###
 
