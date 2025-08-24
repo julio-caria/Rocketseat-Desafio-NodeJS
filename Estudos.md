@@ -1450,12 +1450,6 @@ Para outros comandos que precisem de variáveis específicas:
 3. **Usar nomes descritivos** para diferentes ambientes
 4. **Documentar** as variáveis necessárias no README
 
-```env
-# .env.example
-DATABASE_URL="postgresql://user:password@host:port/database"
-NODE_ENV=development
-```
-
 O `dotenv-cli` é uma ferramenta essencial para projetos que precisam gerenciar múltiplos ambientes de forma eficiente e segura, especialmente quando se trabalha com testes automatizados.
 
 ### Dependência Supertest
@@ -1479,27 +1473,27 @@ Uma factorie é utilizada para realizar a criação de uma entidade em nosso ban
 
 Pensando na cobertura de testes, uma ferramenta que auxilia a entender toda a estrutura de testes feita, uma possibilidade é utilizar o `coverage`. Essa ferramenta gera o diretório `./coverage`
 
-Exemplo de retorno: 
+Exemplo de retorno:
 
 % Coverage report from v8
 
-File                  | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-----------------------|---------|----------|---------|---------|-------------------
-All files             |   80.18 |    76.92 |   71.42 |   80.18 |                  
- src                  |   53.33 |        0 |       0 |   53.33 |                  
-  app.ts              |   58.53 |        0 |     100 |   58.53 | 27-44            
-  server.ts           |       0 |        0 |       0 |       0 | 1-5              
- src/database         |   52.17 |        0 |       0 |   52.17 |                  
-  client.ts           |     100 |      100 |     100 |     100 |                  
-  schema.ts           |    90.9 |      100 |     100 |    90.9 | 24-25            
-  seed.ts             |       0 |        0 |       0 |       0 | 1-25             
- src/routes           |     100 |      100 |     100 |     100 |                  
-  create-course.ts    |     100 |      100 |     100 |     100 |                  
-  get-course-by-id.ts |     100 |      100 |     100 |     100 |                  
-  get-courses.ts      |     100 |      100 |     100 |     100 |                  
- src/tests/factories  |     100 |      100 |     100 |     100 |                  
-  make-course.ts      |     100 |      100 |     100 |     100 |                  
-  make-enrollment.ts  |       0 |        0 |       0 |       0 |                  
+| File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |
+| ------------------- | ------- | -------- | ------- | ------- | ----------------- |
+| All files           | 80.18   | 76.92    | 71.42   | 80.18   |
+| src                 | 53.33   | 0        | 0       | 53.33   |
+| app.ts              | 58.53   | 0        | 100     | 58.53   | 27-44             |
+| server.ts           | 0       | 0        | 0       | 0       | 1-5               |
+| src/database        | 52.17   | 0        | 0       | 52.17   |
+| client.ts           | 100     | 100      | 100     | 100     |
+| schema.ts           | 90.9    | 100      | 100     | 90.9    | 24-25             |
+| seed.ts             | 0       | 0        | 0       | 0       | 1-25              |
+| src/routes          | 100     | 100      | 100     | 100     |
+| create-course.ts    | 100     | 100      | 100     | 100     |
+| get-course-by-id.ts | 100     | 100      | 100     | 100     |
+| get-courses.ts      | 100     | 100      | 100     | 100     |
+| src/tests/factories | 100     | 100      | 100     | 100     |
+| make-course.ts      | 100     | 100      | 100     | 100     |
+| make-enrollment.ts  | 0       | 0        | 0       | 0       |
 
 ============================ Coverage summary ============================
 
@@ -1527,9 +1521,9 @@ Para salvarmos a senha de nosso usuário no banco de dados, nunca devemos salvar
 
 Nessa situação temos 2 famosos algoritmos, o `bcrypt` e o `argon2`
 
-Documentações auxiliares: 
-  Documentação [Bcrypt](https://www.npmjs.com/package/bcrypt) 
-  Documentação [Argon2](https://www.npmjs.com/package/argon2)
+Documentações auxiliares:
+Documentação [Bcrypt](https://www.npmjs.com/package/bcrypt)
+Documentação [Argon2](https://www.npmjs.com/package/argon2)
 
 ## Autenticação
 
@@ -1560,7 +1554,7 @@ Conforme podemos notar no exemplo de Token acima, o JWT é dividido em 3 partes,
 }
 ```
 
-Infromações do `Payload`: 
+Infromações do `Payload`:
 
 ```json
 {
@@ -1584,8 +1578,278 @@ Documentação Auxiliar: [JWT - Json Web Token](https://www.jwt.io/)
 
 ### Validação nas rotas
 
+A validação de rotas é um aspecto fundamental para garantir a segurança e integridade da aplicação. No projeto em questão, implementamos um sistema de autenticação baseado em JWT (JSON Web Token) com controle de roles (papéis) de usuário.
 
+#### Estrutura de Autenticação JWT
+
+O sistema de autenticação implementado utiliza:
+
+1. **Hooks de Validação**: Funções que interceptam requisições antes da execução da rota
+2. **Controle de Roles**: Sistema de permissões baseado em papéis (student/manager)
+3. **Middleware de Autenticação**: Validação automática de tokens JWT
+
+#### Implementação dos Hooks
+
+**1. Hook de Validação JWT (`check-request-jwt.ts`)**
+
+```ts
+import type { FastifyRequest, FastifyReply } from "fastify";
+import jwt from "jsonwebtoken";
+
+type JWTPayload = {
+  sub: string;
+  role: "student" | "manager";
+};
+
+export async function checkRequestJWT(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const token = request.headers.authorization;
+
+  if (!token) {
+    return reply.status(401).send();
+  }
+
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET must be exist!");
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
+    request.user = payload;
+  } catch {
+    return reply.status(401).send();
+  }
+}
+```
+
+**2. Hook de Controle de Roles (`check-user-role.ts`)**
+
+```ts
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { getAuthenticatedUserFromRequest } from "../../utils/get-authenticated-user-from-request.ts";
+
+export function checkUserRole(role: "student" | "manager") {
+  return async function (request: FastifyRequest, reply: FastifyReply) {
+    const user = getAuthenticatedUserFromRequest(request);
+
+    if (user.role !== role) {
+      return reply.status(401).send();
+    }
+  };
+}
+```
+
+**3. Utilitário para Extração de Usuário (`get-authenticated-user-from-request.ts`)**
+
+```ts
+import type { FastifyRequest } from "fastify";
+
+export function getAuthenticatedUserFromRequest(request: FastifyRequest) {
+  const user = request.user;
+
+  if (!user) {
+    throw new Error("Invalid authentication");
+  }
+
+  return user;
+}
+```
+
+#### Tipagem do Fastify
+
+Para estender a tipagem do Fastify e incluir o usuário autenticado:
+
+```ts
+// src/@types/fastify.d.ts
+import fastify from "fastify";
+
+declare module "fastify" {
+  export interface FastifyRequest {
+    user?: {
+      sub: string;
+      role: "student" | "manager";
+    };
+  }
+}
+```
+
+#### Aplicação dos Hooks nas Rotas
+
+**Rota com Autenticação Simples:**
+
+```ts
+export const getCourseByIdRoute: FastifyPluginAsyncZod = async (server) => {
+  server.get(
+    "/courses/:id",
+    {
+      preHandler: [
+        checkRequestJWT, // Apenas valida se o usuário está autenticado
+      ],
+      // ... resto da configuração
+    },
+    async (request, reply) => {
+      const user = getAuthenticatedUserFromRequest(request);
+      // ... lógica da rota
+    }
+  );
+};
+```
+
+**Rota com Controle de Role:**
+
+```ts
+export const createCourseRoute: FastifyPluginAsyncZod = async (server) => {
+  server.post(
+    "/courses",
+    {
+      preHandler: [
+        checkRequestJWT, // Valida autenticação
+        checkUserRole("manager"), // Valida se é manager
+      ],
+      // ... resto da configuração
+    },
+    async (request, reply) => {
+      // ... lógica da rota
+    }
+  );
+};
+```
+
+#### Fluxo de Autenticação
+
+1. **Login**: Usuário faz login e recebe um JWT
+2. **Requisições**: Token é enviado no header `Authorization`
+3. **Validação**: Hook `checkRequestJWT` valida o token
+4. **Controle de Acesso**: Hook `checkUserRole` verifica permissões
+5. **Execução**: Rota é executada se todas as validações passarem
+
+#### Exemplo de Uso
+
+```http
+POST /sessions
+Content-Type: application/json
+
+{
+  "email": "manager@example.com",
+  "password": "123456"
+}
+```
+
+**Resposta:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Requisição Autenticada:**
+
+```http
+POST /courses
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "title": "Novo Curso"
+}
+```
+
+#### Boas Práticas de Segurança
+
+1. **JWT_SECRET**: Sempre use uma chave secreta forte e única
+2. **Expiração**: Configure tempo de expiração adequado para tokens
+3. **HTTPS**: Sempre use HTTPS em produção
+4. **Validação**: Valide todos os dados de entrada
+5. **Logs**: Registre tentativas de acesso não autorizado
+6. **Rate Limiting**: Implemente limitação de taxa de requisições
+
+#### Testes de Autenticação
+
+```ts
+import { test, expect } from "vitest";
+import request from "supertest";
+import { server } from "../app.ts";
+import { makeUser } from "../tests/factories/make-user.ts";
+
+test("should require authentication", async () => {
+  await server.ready();
+
+  const response = await request(server.server)
+    .get("/courses/123")
+    .set("Content-Type", "application/json");
+
+  expect(response.status).toEqual(401);
+});
+
+test("should require manager role for course creation", async () => {
+  await server.ready();
+
+  const { user, passwordBeforeHash } = await makeUser({ role: "student" });
+
+  // Login como student
+  const loginResponse = await request(server.server)
+    .post("/sessions")
+    .set("Content-Type", "application/json")
+    .send({
+      email: user.email,
+      password: passwordBeforeHash,
+    });
+
+  const token = loginResponse.body.token;
+
+  // Tentar criar curso (apenas managers podem)
+  const response = await request(server.server)
+    .post("/courses")
+    .set("Authorization", token)
+    .set("Content-Type", "application/json")
+    .send({
+      title: "Novo Curso",
+    });
+
+  expect(response.status).toEqual(401);
+});
+```
 
 ## Deploy da Aplicação
 
-Para realizar o deploy da aplicação node, podemos e vamos utilizar o dockerfile, onde conterá todas as informações de geração da nossa imagem para geração do serviço e utilização em outras máquinas.
+O deploy da aplicação é realizado utilizando Docker para containerização e Fly.io como plataforma de hospedagem, com integração do Grafana para monitoramento.
+
+### Dockerfile
+
+O Dockerfile é responsável por criar a imagem da aplicação:
+
+```dockerfile
+# Estágio de build
+FROM node:22-alpine AS builder
+
+# Define o diretório de trabalho
+WORKDIR /app
+
+# Copia o código fonte
+COPY package*.json ./
+
+# Instala dependências
+RUN npm ci --only=production
+
+# Expõe a porta 3333
+EXPOSE 3333
+
+CMD ["node", "src/server.js"]
+```
+
+**Explicação do Dockerfile:**
+
+1. **Otimização**: Copia apenas arquivos necessários para produção, como é o caso do `COPY package*.json ./`
+2. **Multi-stage Build**: Conceito mencionado pelo Instrutor, o Multi-stage build é um conceito utilizado para otimização na geração de imagens do docker.
+3. **Alpine Linux**: Distribuição leve para containers, somente com o essencial da distro
+
+### Configuração do Fly.io
+
+O arquivo `fly.toml` é gerado automaticamente pelo fly a partir do deploy da aplicação com configurações essenciais para a aplicação. Adicionamos apenas configurações de deploy no arquivo para executar as migrates do banco de dados e assim realizar a criação das nossas tabelas.
+
+### Integração com Grafana
+
+O Fly.io oferece integração nativa com Grafana para monitoramento:
