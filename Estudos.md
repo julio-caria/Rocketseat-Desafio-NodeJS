@@ -1584,4 +1584,8 @@ Documentação Auxiliar: [JWT - Json Web Token](https://www.jwt.io/)
 
 ### Validação nas rotas
 
-<!-- 1:38:24 -->
+
+
+## Deploy da Aplicação
+
+Para realizar o deploy da aplicação node, podemos e vamos utilizar o dockerfile, onde conterá todas as informações de geração da nossa imagem para geração do serviço e utilização em outras máquinas.
