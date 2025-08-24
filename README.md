@@ -1,17 +1,20 @@
 # 🚀 API de Cursos - Node.js + TypeScript
 
-Uma API REST simples e moderna construída com Node.js, TypeScript, Fastify e PostgreSQL. Ideal para estudos e como base para projetos maiores.
+Uma API REST completa e moderna construída com Node.js, TypeScript, Fastify e PostgreSQL. Inclui autenticação JWT, testes automatizados, documentação automática e deploy automatizado.
 
 ## 📋 Índice
 
 - [Tecnologias](#-tecnologias)
-- [Pré-requisitos](#-pré-requisitos)
+- [Funcionalidades](#-funcionalidades)
+- [Pré-requisitos](#️-pré-requisitos)
 - [Instalação](#-instalação)
 - [Configuração](#-configuração)
-- [Executando](#-executando)
+- [Executando](#️-executando)
+- [Testes](#-testes)
 - [Endpoints](#-endpoints)
-- [Estrutura do Banco](#-estrutura-do-banco)
-- [Fluxo da Aplicação](#-fluxo-da-aplicação)
+- [Autenticação](#-autenticação)
+- [Estrutura do Banco](#️-estrutura-do-banco)
+- [Deploy](#-deploy)
 - [Scripts Disponíveis](#-scripts-disponíveis)
 - [Troubleshooting](#-troubleshooting)
 
@@ -23,14 +26,31 @@ Uma API REST simples e moderna construída com Node.js, TypeScript, Fastify e Po
 - **ORM:** Drizzle ORM
 - **Banco de Dados:** PostgreSQL
 - **Validação:** Zod
+- **Autenticação:** JWT (JSON Web Token)
+- **Criptografia:** Argon2
+- **Testes:** Vitest + Supertest
 - **Documentação:** Swagger/OpenAPI + Scalar API Reference
 - **Containerização:** Docker & Docker Compose
+- **Deploy:** Fly.io
+- **Monitoramento:** Grafana
+
+## ✨ Funcionalidades
+
+- 🔐 **Autenticação JWT** com controle de roles (student/manager)
+- 📚 **CRUD completo** de cursos
+- 👥 **Sistema de usuários** com criptografia de senhas
+- 🔍 **Busca e paginação** de cursos
+- 📊 **Testes automatizados** com cobertura
+- 📖 **Documentação automática** da API
+- 📈 **Monitoramento** com métricas e logs
+- 🔒 **Segurança** com validação e rate limiting
 
 ## ⚙️ Pré-requisitos
 
 - Node.js 22 ou superior
 - Docker e Docker Compose
 - npm (ou outro gerenciador de pacotes)
+- Conta no Fly.io (para deploy)
 
 ## 📦 Instalação
 
@@ -58,7 +78,10 @@ Uma API REST simples e moderna construída com Node.js, TypeScript, Fastify e Po
 
    ```env
    # Configuração do banco de dados
-   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/desafio
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/desafio_nodejs
+
+   # Chave secreta para JWT (GERE UMA CHAVE FORTE!)
+   JWT_SECRET=sua-chave-super-secreta-aqui
 
    # Ambiente de desenvolvimento (ativa documentação)
    NODE_ENV=development
@@ -70,7 +93,13 @@ Uma API REST simples e moderna construída com Node.js, TypeScript, Fastify e Po
    npm run db:migrate
    ```
 
-4. **Opcional - Visualize o banco com Drizzle Studio:**
+4. **Opcional - Popule o banco com dados de teste:**
+
+   ```bash
+   npm run db:seed
+   ```
+
+5. **Opcional - Visualize o banco com Drizzle Studio:**
    ```bash
    npm run db:studio
    ```
@@ -84,12 +113,63 @@ npm run dev
 - **Servidor:** http://localhost:3333
 - **Documentação:** http://localhost:3333/docs (apenas em desenvolvimento)
 
+## 🧪 Testes
+
+### Executar todos os testes:
+
+```bash
+npm test
+```
+
+### Executar testes em modo watch:
+
+```bash
+npm run test:watch
+```
+
+### Verificar cobertura de testes:
+
+```bash
+npm run test:coverage
+```
+
+### Executar testes específicos:
+
+```bash
+npm test -- --run src/routes/login.test.ts
+```
+
 ## 🔌 Endpoints
 
-### Criar Curso
+### Autenticação
+
+#### Login
+
+```http
+POST /sessions
+Content-Type: application/json
+
+{
+  "email": "manager@example.com",
+  "password": "123456"
+}
+```
+
+**Resposta (200):**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Cursos (Requer Autenticação)
+
+#### Criar Curso (Apenas Managers)
 
 ```http
 POST /courses
+Authorization: <seu-token-jwt>
 Content-Type: application/json
 
 {
@@ -105,10 +185,11 @@ Content-Type: application/json
 }
 ```
 
-### Listar Cursos
+#### Listar Cursos (Apenas Managers)
 
 ```http
-GET /courses
+GET /courses?search=docker&page=1&orderBy=title
+Authorization: <seu-token-jwt>
 ```
 
 **Resposta (200):**
@@ -118,16 +199,19 @@ GET /courses
   "courses": [
     {
       "id": "uuid-do-curso",
-      "title": "Curso de Docker"
+      "title": "Curso de Docker",
+      "enrollments": 5
     }
-  ]
+  ],
+  "total": 1
 }
 ```
 
-### Buscar Curso por ID
+#### Buscar Curso por ID (Todos os usuários autenticados)
 
 ```http
 GET /courses/:id
+Authorization: <seu-token-jwt>
 ```
 
 **Resposta (200):**
@@ -144,70 +228,82 @@ GET /courses/:id
 
 **Resposta (404):** Curso não encontrado
 
-> 💡 **Dica:** Use o arquivo `courses.http` para testar os endpoints diretamente no VS Code com extensões REST Client.
+> 💡 **Dica:** Use o arquivo `requests.http` para testar os endpoints diretamente no VS Code com extensões REST Client.
+
+## 🔐 Autenticação
+
+### Sistema de Roles
+
+- **`student`**: Pode visualizar cursos
+- **`manager`**: Pode criar, listar e gerenciar cursos
+
+### Como usar a autenticação:
+
+1. **Faça login** para obter um token JWT
+2. **Inclua o token** no header `Authorization` das requisições
+3. **O sistema valida** automaticamente o token e as permissões
+
+### Exemplo de fluxo:
+
+```bash
+# 1. Login
+curl -X POST http://localhost:3333/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"email": "manager@example.com", "password": "123456"}'
+
+# 2. Use o token retornado
+curl -X GET http://localhost:3333/courses \
+  -H "Authorization: <token-retornado-no-login>"
+```
 
 ## 🗄️ Estrutura do Banco
+
+### Tabela `users`
+
+| Campo      | Tipo | Descrição                                |
+| ---------- | ---- | ---------------------------------------- |
+| `id`       | UUID | Chave primária (gerada automaticamente)  |
+| `name`     | TEXT | Nome do usuário (obrigatório)            |
+| `email`    | TEXT | Email do usuário (único, obrigatório)    |
+| `password` | TEXT | Senha criptografada (obrigatório)        |
+| `role`     | ENUM | Papel do usuário: 'student' ou 'manager' |
 
 ### Tabela `courses`
 
 | Campo         | Tipo | Descrição                               |
 | ------------- | ---- | --------------------------------------- |
 | `id`          | UUID | Chave primária (gerada automaticamente) |
-| `title`       | TEXT | Título do curso (único, obrigatório)    |
+| `title`       | TEXT | Título do curso (obrigatório)           |
 | `description` | TEXT | Descrição do curso (opcional)           |
 
-### Tabela `users` (exemplo para estudos)
+### Tabela `enrollments`
 
-| Campo   | Tipo | Descrição                               |
-| ------- | ---- | --------------------------------------- |
-| `id`    | UUID | Chave primária (gerada automaticamente) |
-| `name`  | TEXT | Nome do usuário (obrigatório)           |
-| `email` | TEXT | Email do usuário (único, obrigatório)   |
+| Campo      | Tipo | Descrição                               |
+| ---------- | ---- | --------------------------------------- |
+| `id`       | UUID | Chave primária (gerada automaticamente) |
+| `userId`   | UUID | Referência ao usuário (FK)              |
+| `courseId` | UUID | Referência ao curso (FK)                |
 
-## 🔄 Fluxo da Aplicação
+## 🚀 Deploy
 
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant S as Fastify Server
-  participant V as Zod Validator
-  participant DB as Drizzle + PostgreSQL
+### Deploy Automatizado no Fly.io
 
-  C->>S: POST /courses {title}
-  S->>V: Validar body
-  V-->>S: OK ou Erro 400
-  alt válido
-    S->>DB: INSERT INTO courses (title)
-    DB-->>S: {id}
-    S-->>C: 201 {courseId}
-  else inválido
-    S-->>C: 400
-  end
+O projeto está configurado para deploy automático no Fly.io com:
 
-  C->>S: GET /courses
-  S->>DB: SELECT id,title FROM courses
-  DB-->>S: lista
-  S-->>C: 200 {courses: [...]}
-
-  C->>S: GET /courses/:id
-  S->>V: Validar param id (uuid)
-  V-->>S: OK ou Erro 400
-  alt encontrado
-    S->>DB: SELECT * FROM courses WHERE id=...
-    DB-->>S: course
-    S-->>C: 200 {course}
-  else não encontrado
-    S-->>C: 404
-  end
-```
+- **CI/CD Pipeline** com GitHub Actions
+- **Monitoramento** com Grafana
+- **Métricas** em tempo real
+- **Logs estruturados**
 
 ## 📜 Scripts Disponíveis
 
 | Comando               | Descrição                        |
 | --------------------- | -------------------------------- |
 | `npm run dev`         | Inicia o servidor com hot reload |
+| `npm run test`        | Executa todos os testes          |
 | `npm run db:generate` | Gera artefatos do Drizzle        |
 | `npm run db:migrate`  | Aplica migrações no banco        |
+| `npm run db:seed`     | Popula banco com dados de teste  |
 | `npm run db:studio`   | Abre o Drizzle Studio            |
 
 ## 🔧 Troubleshooting
@@ -229,20 +325,58 @@ netstat -an | grep 5432
 - Verifique se o arquivo `.env` existe na raiz
 - Confirme que a variável `DATABASE_URL` está definida
 
+**❌ JWT_SECRET não configurado**
+
+- Adicione `JWT_SECRET=sua-chave-secreta` no arquivo `.env`
+- Gere uma chave forte: `openssl rand -base64 32`
+
+**❌ Erro 401 - Não autorizado**
+
+- Verifique se o token JWT está sendo enviado no header `Authorization`
+- Confirme se o token não expirou
+- Verifique se o usuário tem a role necessária
+
 **❌ Documentação não aparece em `/docs`**
 
 - Certifique-se de que `NODE_ENV=development` no `.env`
 - Reinicie o servidor após alterações no `.env`
 
-**❌ Erro nas migrações**
+**❌ Testes falhando**
 
 ```bash
-# Gere os artefatos primeiro
-npm run db:generate
+# Limpe o banco de testes
+docker compose down -v
+docker compose up -d
 
-# Depois execute as migrações
-npm run db:migrate
+# Execute as migrações de teste
+npm run pretest
+
+# Execute os testes
+npm test
 ```
+
+## 📊 Cobertura de Testes
+
+O projeto mantém alta cobertura de testes:
+
+- **Statements:** 80.18%
+- **Branches:** 76.92%
+- **Functions:** 71.42%
+- **Lines:** 80.18%
+
+## 🔒 Segurança
+
+- ✅ **Autenticação JWT** com expiração
+- ✅ **Criptografia de senhas** com Argon2
+- ✅ **Validação de entrada** com Zod
+- ✅ **Controle de acesso** baseado em roles
+- ✅ **Logs estruturados** para auditoria
+
+## 📈 Monitoramento
+
+- **Métricas em tempo real** via Prometheus
+- **Dashboards** no Grafana
+- **Logs estruturados** com Pino pretty
 
 ## 📄 Licença
 
@@ -252,4 +386,5 @@ Este projeto está sob a licença ISC. Veja o arquivo `package.json` para mais d
 
 <div align="center">
   <p>Feito com ❤️ para estudos de Node.js e TypeScript</p>
+  <p>🚀 Deploy automático | 🧪 Testes automatizados | 📊 Monitoramento em tempo real</p>
 </div>
