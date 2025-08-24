@@ -1,0 +1,33 @@
+@hostname = localhost
+@port = 3333
+@baseURL = http://{{hostname}}:{{port}}
+
+###
+
+GET {{baseURL}}/courses
+
+###
+GET {{baseURL}}/courses?page=1
+
+###
+POST {{baseURL}}/courses
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OGU4NWJlYS00OWRjLTRlMTUtYWI5Yy1lNDEzMGU4MzNlZWEiLCJyb2xlIjoibWFuYWdlciIsImlhdCI6MTc1NTk5NTEwM30.5gB208G0NDRKAiVO4oiJswZLsLIU_agomAgV6Bgj8c8
+
+{
+  "title": "Curso de Marketing Digital"
+}
+###
+
+GET {{baseURL}}/courses/67ce01bf-4daa-4631-810f-59246ac9c687
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OGU4NWJlYS00OWRjLTRlMTUtYWI5Yy1lNDEzMGU4MzNlZWEiLCJyb2xlIjoibWFuYWdlciIsImlhdCI6MTc1NTk5NTEwM30.5gB208G0NDRKAiVO4oiJswZLsLIU_agomAgV6Bgj8c8
+
+### 
+
+POST {{baseURL}}/sessions
+Content-Type: application/json
+
+{
+  "email": "JoaoPedro49@live.com",
+  "password": "12345678"
+}

@@ -1514,3 +1514,74 @@ Lines: 80.18% (174/217)
 ======================================================================
 
 Documentação auxiliar: [Coverage - Vitest](https://vitest.dev/guide/coverage.html)
+
+## Novos campos no banco de dados
+
+Realizamos a criação de 2 novos campos na tabela de usuários, sendo eles o de password e o de role, com tipo string e enum, respectivamente.
+
+> OBS.: Para a senha, não podemos armazenar a senha crua no banco de dados, portanto, devemos utilizar algoritmos de hash para que possam ser armazenadas em segurança, abaixo estão 2 dos famosos algoritmos mais usados para tal finalidade.
+
+### Criptografia de dados
+
+Para salvarmos a senha de nosso usuário no banco de dados, nunca devemos salvar a senha "pura", e sim utilizarmos algoritmos de criptografia adequados para tal finalidade.
+
+Nessa situação temos 2 famosos algoritmos, o `bcrypt` e o `argon2`
+
+Documentações auxiliares: 
+  Documentação [Bcrypt](https://www.npmjs.com/package/bcrypt) 
+  Documentação [Argon2](https://www.npmjs.com/package/argon2)
+
+## Autenticação
+
+### Métodos de Autenticação
+
+- Exemplo: Tabela de sessões - Segue padrão Stateful (Armazena um estado para continuar funcionando), o que depende da inserção de novos registros no banco de dados e a cada login uma nova consulta tem que ser realizada no banco, essa estratégia é boa e útil quando menciona-se o "Revoke", ou seja, revogar acessos da aplicação.
+- JWT: O JWT Funciona baseado num algoritmo de criptografia de chave simétrica
+
+#### Chave Simétrica e Assimétrica
+
+- Chave Simétrica: Há uma única chave que faz a criação de novos tokens e a validação dos tokens previamente criados a fim de verificar se são válidos. Em termos técnicos, uma única chave secreta é compartilhada entre o remetente e o destinatário. Essa chave é usada para codificar e decodificar a mensagem.
+- Chave Assimétrica: 2 Chaves são utilizadas, uma sendo a chave pública e outra privada, uma sendo utilizada para criação dos tokens e outra para validação destes.
+
+Documentação Auxiliar: [Chave Simétrica]() [Chave Assimétrica]()
+
+#### JWT - Json Web Token
+
+```html
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
+```
+
+Conforme podemos notar no exemplo de Token acima, o JWT é dividido em 3 partes, uma sendo o `Header` que contém o algoritmo de criptografia e o tipo.
+
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+Infromações do `Payload`: 
+
+```json
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "admin": true,
+  "iat": 1516239022
+}
+```
+
+> OBS.: Qualquer informação sensivel, não deve estar contida no payload do JWT, além disso, qualquer informação alterada no payload é verificada na 3ª etapa, a assinatura onde, qualquer informação alterada, a assinatura também será alterada.
+
+##### Instalação Json Web Token
+
+```sh
+npm i jsonwebtoken
+npm i @types/jsonwebtoken
+```
+
+Documentação Auxiliar: [JWT - Json Web Token](https://www.jwt.io/)
+
+### Validação nas rotas
+
+<!-- 1:38:24 -->

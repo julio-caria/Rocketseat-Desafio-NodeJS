@@ -10,6 +10,7 @@ import { getCourseByIdRoute } from "./routes/get-course-by-id.ts";
 import { getCoursesRoute } from "./routes/get-courses.ts";
 import { createCourseRoute } from "./routes/create-course.ts";
 import scalarAPIReference from "@scalar/fastify-api-reference";
+import { loginRoute } from "./routes/login.ts";
 
 const server = fastify({
   logger: {
@@ -49,5 +50,6 @@ server.setValidatorCompiler(validatorCompiler);
 server.register(getCoursesRoute);
 server.register(getCourseByIdRoute);
 server.register(createCourseRoute);
+server.register(loginRoute);
 
 export { server }

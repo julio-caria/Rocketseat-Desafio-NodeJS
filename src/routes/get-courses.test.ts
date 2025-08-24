@@ -1,28 +1,31 @@
 import { test, expect } from "vitest";
 import request from "supertest";
 import { server } from "../app.ts";
-import { faker } from "@faker-js/faker";
-import { randomUUID } from "node:crypto";
 import { makeCourse } from "../tests/factories/make-course.ts";
+import { makeAuthenticatedUser } from "../tests/factories/make-user.ts";
+import { randomUUID } from "node:crypto";
 
-test("Get course by Id ", async () => {
+test("Get all courses", async () => {
   await server.ready();
 
   const titleId = randomUUID();
+
+  const { token } = await makeAuthenticatedUser('manager');
   const course = await makeCourse(titleId);
 
   const response = await request(server.server)
-    .get(`/courses?search=${course.title}`);
+    .get(`/courses?search=${titleId}`)
+    .set('Authorization', token)
 
   expect(response.status).toEqual(200);
   expect(response.body).toEqual({
     total: 1,
-    courses: [ 
+    courses: [
       {
         id: expect.any(String),
         title: titleId,
         enrollments: 0,
-      }
-    ]
-  })
+      },
+    ],
+  });
 });
